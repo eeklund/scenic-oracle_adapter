@@ -138,9 +138,11 @@ module Scenic
       end
 
       def trimmed_definition(sql)
-        sql.sub(/\s*;\s*$/, "")
-          .lines.map { |line| line.strip }
-          .join("\n")
+        minimum_leading_whitespace = sql.lines.map { |line| line.index(/\w|\R/) }.min
+        sql.lines
+          .map { |line| line[minimum_leading_whitespace..-1] }.join
+          .sub(/;$/, "")
+          .rstrip
       end
     end
   end
