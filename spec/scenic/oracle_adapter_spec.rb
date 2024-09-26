@@ -1,5 +1,6 @@
 require "scenic/adapters/oracle/refresh_dependencies"
 require "active_support/core_ext/string/indent"
+ActiveRecord::ConnectionAdapters::OracleEnhanced::SchemaDumper.prepend Scenic::SchemaDumper
 
 RSpec.describe Scenic::OracleAdapter do
   context "integration" do
