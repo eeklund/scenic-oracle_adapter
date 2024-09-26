@@ -82,23 +82,38 @@ RSpec.describe Scenic::OracleAdapter do
 
       it "creates a consistant schema.rb file" do
         adapter.create_view("blah", <<-BLAH)
-      select 1 as a from dual
-        BLAH
+      select
+      1 as a
+      from
+      dual
+      BLAH
 
         adapter.create_view("fancy_blah", <<-FANCY_BLAH)
       select
-        1 as a,
-          2 as bi
+        1 as fancy_a,
+          2 as fancy_b
       from
         dual
-        FANCY_BLAH
+      FANCY_BLAH
+
+        puts "oracle sez initially"
+        adapter.views.each do |view|
+          puts "name"
+          puts view.name
+          puts "defition"
+          puts view.definition
+          puts "trimmed definition"
+          puts adapter.send(:trimmed_definition, view.definition)
+          puts "to_schema"
+          puts view.send :to_schema
+        end
+
 
         dumper = ActiveRecord::Base.connection.create_schema_dumper({table_name_prefix: ActiveRecord::Base.table_name_prefix, table_name_suffix: ActiveRecord::Base.table_name_suffix})
 
         File.open(first_schema_file_path, "w:utf-8") do |file|
           dumper.dump(file)
         end
-
 
         puts "*" * 80
         puts "the first schema is:"
@@ -109,7 +124,28 @@ RSpec.describe Scenic::OracleAdapter do
         puts "starting load"
         load(first_schema_file_path)
 
-        puts "oracle sez"
+        intermediate_schema_file_path = File.expand_path("./tmp/other_schema.rb") 
+        File.open(intermediate_schema_file_path, "w:utf-8") do |file|
+          dumper.dump(file)
+        end
+        drop_all_views
+        load(intermediate_schema_file_path)
+
+        intermediate_schema_file_path = File.expand_path("./tmp/other_schema.rb") 
+        File.open(intermediate_schema_file_path, "w:utf-8") do |file|
+          dumper.dump(file)
+        end
+        drop_all_views
+        load(intermediate_schema_file_path)
+
+        intermediate_schema_file_path = File.expand_path("./tmp/other_schema.rb") 
+        File.open(intermediate_schema_file_path, "w:utf-8") do |file|
+          dumper.dump(file)
+        end
+        drop_all_views
+        load(intermediate_schema_file_path)
+
+        puts "oracle sez before final dump"
         adapter.views.each do |view|
           puts "name"
           puts view.name
