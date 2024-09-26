@@ -68,6 +68,7 @@ RSpec.describe Scenic::OracleAdapter do
       end
 
       after do
+        drop_all_views
         FileUtils.remove_dir(File.expand_path("./tmp"))
 
         Scenic.configure do |config|
@@ -119,11 +120,10 @@ RSpec.describe Scenic::OracleAdapter do
           puts view.send :to_schema
         end
 
-
+        dumper2= ActiveRecord::Base.connection.create_schema_dumper({table_name_prefix: ActiveRecord::Base.table_name_prefix, table_name_suffix: ActiveRecord::Base.table_name_suffix})
         File.open(second_schema_file_path, "w:utf-8") do |file|
-          dumper.dump(file)
+          dumper2.dump(file)
         end
-
         puts "*" * 80
         puts "the second schema is:"
         puts File.read(second_schema_file_path)
