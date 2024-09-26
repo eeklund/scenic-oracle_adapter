@@ -56,6 +56,86 @@ RSpec.describe Scenic::OracleAdapter do
       expect(find_view("blah").definition).to eq("select 1 as a, 2 as b from dual")
     end
 
+    context "schema dumps" do
+      before do
+        FileUtils.mkdir(File.expand_path("./tmp"))
+        FileUtils.touch([first_schema_file_path, second_schema_file_path])
+
+        @original_datadase = Scenic.database
+        Scenic.configure do |config|
+          config.database = Scenic::Adapters::Oracle.new
+        end
+      end
+
+      after do
+        FileUtils.remove_dir(File.expand_path("./tmp"))
+
+        Scenic.configure do |config|
+          config.database = @original_datadase
+        end
+      end
+
+      let(:first_schema_file_path) { File.expand_path("./tmp/first_schema.rb") }
+      let(:second_schema_file_path) { File.expand_path("./tmp/second_schema.rb") }
+
+      it "creates a consistant schema.rb file" do
+        adapter.create_view("blah", <<-BLAH)
+      select 1 as a from dual
+        BLAH
+
+        adapter.create_view("fancy_blah", <<-FANCY_BLAH)
+      select
+        1 as a,
+          2 as bi
+      from
+        dual
+        FANCY_BLAH
+
+        dumper = ActiveRecord::Base.connection.create_schema_dumper({table_name_prefix: ActiveRecord::Base.table_name_prefix, table_name_suffix: ActiveRecord::Base.table_name_suffix})
+
+        File.open(first_schema_file_path, "w:utf-8") do |file|
+          dumper.dump(file)
+        end
+
+
+        puts "*" * 80
+        puts "the first schema is:"
+        puts File.read(first_schema_file_path)
+
+        drop_all_views
+        puts "*" * 80
+        puts "starting load"
+        load(first_schema_file_path)
+
+        puts "oracle sez"
+        adapter.views.each do |view|
+          puts "name"
+          puts view.name
+          puts "defition"
+          puts view.definition
+          puts "trimmed definition"
+          puts adapter.send(:trimmed_definition, view.definition)
+          puts "to_schema"
+          puts view.send :to_schema
+        end
+
+
+        File.open(second_schema_file_path, "w:utf-8") do |file|
+          dumper.dump(file)
+        end
+
+        puts "*" * 80
+        puts "the second schema is:"
+        puts File.read(second_schema_file_path)
+
+
+        first_file_contents = File.read(first_schema_file_path)
+        second_file_contents = File.read(second_schema_file_path)
+
+        expect(first_file_contents).to eq(second_file_contents)
+      end
+    end
+
     it "creates a materialized view" do
       adapter.create_materialized_view("blah", "select 1 as a from dual")
       view = find_mview("blah")
