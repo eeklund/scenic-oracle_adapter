@@ -91,19 +91,10 @@ RSpec.describe Scenic::OracleAdapter do
         dual
       FANCY_BLAH
 
-        dumper = ActiveRecord::Base.connection.create_schema_dumper({table_name_prefix: ActiveRecord::Base.table_name_prefix, table_name_suffix: ActiveRecord::Base.table_name_suffix})
-
-        File.open(first_schema_file_path, "w:utf-8") do |file|
-          dumper.dump(file)
-        end
-
+        dump_schema(first_schema_file_path)
         drop_all_views
         load(first_schema_file_path)
-
-        dumper2= ActiveRecord::Base.connection.create_schema_dumper({table_name_prefix: ActiveRecord::Base.table_name_prefix, table_name_suffix: ActiveRecord::Base.table_name_suffix})
-        File.open(second_schema_file_path, "w:utf-8") do |file|
-          dumper2.dump(file)
-        end
+        dump_schema(second_schema_file_path)
 
         first_file_contents = File.read(first_schema_file_path)
         second_file_contents = File.read(second_schema_file_path)
