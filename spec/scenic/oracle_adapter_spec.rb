@@ -61,11 +61,15 @@ RSpec.describe Scenic::OracleAdapter do
         Scenic.load
         FileUtils.mkdir(File.expand_path("./tmp"))
         FileUtils.touch([first_schema_file_path, second_schema_file_path])
+
+        @active_record_verbosity = ActiveRecord::Migration.verbose
+        ActiveRecord::Migration.verbose = false
       end
 
       after do
         drop_all_views
         FileUtils.remove_dir(File.expand_path("./tmp"))
+        ActiveRecord::Migration.verbose = @active_record_verbosity
       end
 
       let(:first_schema_file_path) { File.expand_path("./tmp/first_schema.rb") }
