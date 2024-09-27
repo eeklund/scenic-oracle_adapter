@@ -1,6 +1,5 @@
 require "scenic/adapters/oracle/refresh_dependencies"
 require "active_support/core_ext/string/indent"
-ActiveRecord::ConnectionAdapters::OracleEnhanced::SchemaDumper.prepend Scenic::SchemaDumper
 
 RSpec.describe Scenic::OracleAdapter do
   context "integration" do
@@ -59,22 +58,14 @@ RSpec.describe Scenic::OracleAdapter do
 
     context "schema dumps" do
       before do
+        Scenic.load
         FileUtils.mkdir(File.expand_path("./tmp"))
         FileUtils.touch([first_schema_file_path, second_schema_file_path])
-
-        @original_datadase = Scenic.database
-        Scenic.configure do |config|
-          config.database = Scenic::Adapters::Oracle.new
-        end
       end
 
       after do
         drop_all_views
         FileUtils.remove_dir(File.expand_path("./tmp"))
-
-        Scenic.configure do |config|
-          config.database = @original_datadase
-        end
       end
 
       let(:first_schema_file_path) { File.expand_path("./tmp/first_schema.rb") }
@@ -96,75 +87,19 @@ RSpec.describe Scenic::OracleAdapter do
         dual
       FANCY_BLAH
 
-        puts "oracle sez initially"
-        adapter.views.each do |view|
-          puts "name"
-          puts view.name
-          puts "defition"
-          puts view.definition
-          puts "trimmed definition"
-          puts adapter.send(:trimmed_definition, view.definition)
-          puts "to_schema"
-          puts view.send :to_schema
-        end
-
-
         dumper = ActiveRecord::Base.connection.create_schema_dumper({table_name_prefix: ActiveRecord::Base.table_name_prefix, table_name_suffix: ActiveRecord::Base.table_name_suffix})
 
         File.open(first_schema_file_path, "w:utf-8") do |file|
           dumper.dump(file)
         end
 
-        puts "*" * 80
-        puts "the first schema is:"
-        puts File.read(first_schema_file_path)
-
         drop_all_views
-        puts "*" * 80
-        puts "starting load"
         load(first_schema_file_path)
-
-        intermediate_schema_file_path = File.expand_path("./tmp/other_schema.rb") 
-        File.open(intermediate_schema_file_path, "w:utf-8") do |file|
-          dumper.dump(file)
-        end
-        drop_all_views
-        load(intermediate_schema_file_path)
-
-        intermediate_schema_file_path = File.expand_path("./tmp/other_schema.rb") 
-        File.open(intermediate_schema_file_path, "w:utf-8") do |file|
-          dumper.dump(file)
-        end
-        drop_all_views
-        load(intermediate_schema_file_path)
-
-        intermediate_schema_file_path = File.expand_path("./tmp/other_schema.rb") 
-        File.open(intermediate_schema_file_path, "w:utf-8") do |file|
-          dumper.dump(file)
-        end
-        drop_all_views
-        load(intermediate_schema_file_path)
-
-        puts "oracle sez before final dump"
-        adapter.views.each do |view|
-          puts "name"
-          puts view.name
-          puts "defition"
-          puts view.definition
-          puts "trimmed definition"
-          puts adapter.send(:trimmed_definition, view.definition)
-          puts "to_schema"
-          puts view.send :to_schema
-        end
 
         dumper2= ActiveRecord::Base.connection.create_schema_dumper({table_name_prefix: ActiveRecord::Base.table_name_prefix, table_name_suffix: ActiveRecord::Base.table_name_suffix})
         File.open(second_schema_file_path, "w:utf-8") do |file|
           dumper2.dump(file)
         end
-        puts "*" * 80
-        puts "the second schema is:"
-        puts File.read(second_schema_file_path)
-
 
         first_file_contents = File.read(first_schema_file_path)
         second_file_contents = File.read(second_schema_file_path)

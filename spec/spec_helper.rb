@@ -1,7 +1,6 @@
 require "bundler/setup"
 require "scenic/oracle_adapter"
 
-Scenic.load
 Scenic.configure do |config|
   config.database = Scenic::Adapters::Oracle.new
 end
